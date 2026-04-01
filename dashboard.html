@@ -2101,6 +2101,7 @@ function selectSurvey(key) {
   document.getElementById('conEditor').innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:32px;margin-bottom:12px">🛠</div><p style="font-size:14px">${t('conEditorHint')}</p></div>`;
   renderConItems();
   updateAIModeUI();
+  scheduleSaveSurveys();
 }
 
 function toggleDropdown() {
