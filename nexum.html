@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Nexum — Telegram-бот для збору анамнезу пацієнтів</title>
+<meta name="description" content="Nexum — Telegram-бот, що збирає анамнез пацієнтів до прийому."/>
+<meta name="robots" content="index, follow"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#05070e;--surface:#0b0f1c;--card:#0f1525;--border:#1a2540;--accent:#3b82f6;--accent2:#06d6a0;--warn:#f59e0b;--text:#dde4f0;--muted:#5a6e94;--white:#fff;}
+*{box-sizing:border-box;margin:0;padding:0;}html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* ── EN FONT OVERRIDES ── */
+body.en{font-family:'Lora',serif;letter-spacing:.01em;}
+/* h1 stays Syne (same as Ukrainian) for visual consistency */
+body.en .nav-logo,body.en h2,body.en h3,body.en h4,body.en .pc-name,body.en .hs-title,body.en .faq-q-text,body.en .modal-title{font-family:'Playfair Display',serif;letter-spacing:-.02em;}
+body.en .nav-logo span{font-family:'Playfair Display',serif;}
+body.en .nav-links a,body.en .btn-ghost,body.en .btn-accent,body.en .btn-big,body.en .btn-big2,body.en .sub-btn,body.en .fc-tab,body.en .inp,body.en select{font-family:'Lora',serif;}
+body.en .lang-btn,body.en .sec-lbl,body.en .hn-v,body.en .pc-main,body.en .faq-num,body.en .faq-stat-val,body.en .rs-n,body.en .fsm-n,body.en .chat-summary-title,body.en .chat-sum-val,body.en code{font-family:'DM Mono',monospace;}
+/* h1 uses Syne in both languages — same bold/chunky look */
+body.en h1{font-family:'Syne',sans-serif !important;font-weight:800;letter-spacing:-.04em;line-height:1.03;}
+body.en h2{letter-spacing:-.02em;}
+body.en .hero-desc,body.en .faq-aside-desc,body.en .hs-desc,body.en .ac p,body.en .fi span,body.en .pc-desc,body.en .rs-t{font-family:'Lora',serif;font-weight:400;line-height:1.85;}
+
+/* ── LANGUAGE SWITCHER ── */
+.lang-switch{display:flex;align-items:center;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;}
+.lang-btn{background:transparent;border:none;color:var(--muted);font-size:11.5px;font-weight:600;font-family:'JetBrains Mono',monospace;padding:5px 11px;cursor:pointer;transition:all .15s;letter-spacing:.04em;}
+.lang-btn:hover{color:var(--text);}
+.lang-btn.active{background:var(--accent);color:#fff;}
+.lang-btn:first-child{border-right:1px solid var(--border);}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;backdrop-filter:blur(24px);background:#05070ecc;border-bottom:1px solid var(--border);padding:0 56px;height:64px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);letter-spacing:-.03em;display:flex;align-items:center;gap:10px;}
+.nav-logo span{color:var(--accent2);}
+.nav-links{display:flex;gap:30px;}
+.nav-links a{font-size:13px;color:var(--muted);text-decoration:none;transition:color .2s;}
+.nav-links a:hover{color:var(--text);}
+.nav-right{display:flex;gap:10px;align-items:center;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 18px;font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-accent{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-family:'Inter',sans-serif;font-weight:500;cursor:pointer;transition:all .2s;}
+.btn-accent:hover{opacity:.85;}
+
+/* ── HERO ── */
+.hero{max-width:1280px;margin:0 auto;padding:140px 56px 90px;display:grid;grid-template-columns:1fr 420px;gap:72px;align-items:center;}
+h1{font-family:'Syne',sans-serif;font-size:clamp(30px,5vw,50px);font-weight:800;line-height:1.03;letter-spacing:-.04em;color:var(--white);}
+h1 .bl{color:var(--accent);}h1 .gr{color:var(--accent2);}
+.hero-desc{font-size:16px;color:var(--muted);line-height:1.8;margin-top:20px;max-width:460px;font-weight:300;}
+.hero-btns{display:flex;gap:12px;margin-top:34px;flex-wrap:wrap;}
+.btn-big{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 28px;font-size:14px;font-family:'Inter',sans-serif;font-weight:500;cursor:pointer;transition:all .2s;}
+.btn-big:hover{transform:translateY(-2px);box-shadow:0 10px 32px #3b82f650;}
+.btn-big2{background:transparent;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px 28px;font-size:14px;font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;}
+.btn-big2:hover{border-color:var(--accent2);color:var(--accent2);}
+.hero-nums{display:flex;gap:40px;margin-top:48px;padding-top:40px;border-top:1px solid var(--border);}
+.hn-v{font-family:'JetBrains Mono',monospace;font-size:28px;color:var(--white);font-weight:500;}
+.hn-v b{color:var(--accent2);}
+.hn-l{font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* ── CHAT MOCK ── */
+.chat-mock{background:var(--card);border-radius:22px;border:1px solid var(--border);overflow:hidden;box-shadow:0 32px 100px #000a;display:flex;flex-direction:column;max-height:520px;}
+.cm-bar{background:var(--surface);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.cm-dots{display:flex;gap:5px;}.cm-dot{width:10px;height:10px;border-radius:50%;}
+.cm-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.cm-name{font-size:13px;font-weight:600;color:var(--white);}
+.cm-sub{font-size:10px;color:var(--muted);}
+.cm-live{width:8px;height:8px;background:var(--accent2);border-radius:50%;margin-left:auto;}
+.chat-progress{height:2px;background:var(--border);flex-shrink:0;}
+.chat-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .6s ease;border-radius:0 2px 2px 0;}
+.cm-body{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}
+.cm-body::-webkit-scrollbar{width:2px;}
+.bub-b,.bub-u{animation:bubIn .28s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes bubIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+.bub-b{background:var(--surface);border:1px solid var(--border);border-radius:14px 14px 14px 4px;padding:11px 15px;font-size:13px;line-height:1.55;max-width:88%;color:var(--text);}
+.bub-u{background:var(--accent);color:#fff;border-radius:14px 14px 4px 14px;padding:11px 15px;font-size:13px;line-height:1.55;align-self:flex-end;max-width:75%;}
+.bub-opts{display:flex;flex-wrap:wrap;gap:6px;animation:bubIn .3s .05s both;}
+.bub-opt{background:transparent;border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:12px;color:var(--text);cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;white-space:nowrap;}
+.bub-opt:hover{border-color:var(--accent);color:var(--accent);background:#3b82f610;}
+.bub-opt.selected{background:var(--accent);border-color:var(--accent);color:#fff;}
+.bub-opt:disabled{opacity:.45;cursor:default;pointer-events:none;}
+.scale-wrap{display:flex;flex-direction:column;gap:8px;animation:bubIn .3s .05s both;}
+.scale-btns{display:flex;gap:4px;}
+.scale-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-family:'JetBrains Mono',monospace;cursor:pointer;transition:all .15s;flex-shrink:0;}
+.scale-btn:hover{border-color:var(--accent);color:var(--accent);background:#3b82f610;}
+.scale-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff;}
+.scale-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.typing{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:14px 14px 14px 4px;padding:11px 14px;width:fit-content;animation:bubIn .2s both;}
+.typing span{width:5px;height:5px;background:var(--muted);border-radius:50%;animation:ty .9s infinite;}
+.typing span:nth-child(2){animation-delay:.15s;}.typing span:nth-child(3){animation-delay:.3s;}
+@keyframes ty{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+.chat-summary{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;animation:bubIn .3s both;font-size:12px;}
+.chat-summary-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--white);margin-bottom:10px;}
+.chat-sum-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);gap:10px;}
+.chat-sum-row:last-child{border-bottom:none;}
+.chat-sum-label{color:var(--muted);font-size:11px;}
+.chat-sum-val{color:var(--text);font-weight:500;font-size:11.5px;}
+.chat-sum-val.hi{color:var(--accent2);}
+.chat-doctor-card{background:linear-gradient(135deg,#0e1d3a,#091428);border:1px solid #3b82f640;border-radius:12px;padding:14px;animation:bubIn .3s both;display:flex;align-items:center;gap:12px;}
+.chat-doc-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.chat-doc-name{font-size:13px;font-weight:600;color:var(--white);margin-bottom:2px;}
+.chat-doc-ready{font-size:11px;color:var(--accent2);display:flex;align-items:center;gap:5px;}
+.chat-doc-ready::before{content:'';width:6px;height:6px;background:var(--accent2);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.chat-hint{padding:9px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;background:var(--surface);flex-shrink:0;}
+.chat-restart{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 16px;font-size:12px;font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;margin-top:4px;align-self:center;}
+.chat-restart:hover{border-color:var(--accent2);color:var(--accent2);}
+
+/* ── SECTIONS ── */
+.sec-wrap{padding:100px 0;}
+.sec-in{max-width:1280px;margin:0 auto;padding:0 56px;}
+.sec-lbl{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:14px;font-family:'JetBrains Mono',monospace;}
+h2{font-family:'Syne',sans-serif;font-size:clamp(30px,4vw,52px);font-weight:800;line-height:1.06;letter-spacing:-.04em;color:var(--white);}
+h2 .bl{color:var(--accent);}h2 .gr{color:var(--accent2);}
+
+/* ── FEATURES GRID ── */
+.ag{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:52px;}
+.ac{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px;position:relative;overflow:hidden;transition:all .22s;}
+.ac::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:.3s;}
+.ac:hover{border-color:#3b82f640;transform:translateY(-3px);}
+.ac:hover::after{opacity:1;}
+.ac-i{font-size:26px;margin-bottom:14px;}
+.ac h3{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--white);margin-bottom:8px;}
+.ac p{font-size:13px;color:var(--muted);line-height:1.65;}
+
+/* ── HOW IT WORKS ── */
+.how-wrap{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:60px;border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.how-steps{padding:40px 36px;display:flex;flex-direction:column;gap:0;border-right:1px solid var(--border);}
+.hs{display:flex;gap:16px;padding:22px 0;border-bottom:1px solid var(--border);}
+.hs:last-child{border-bottom:none;padding-bottom:0;}
+.hs:first-child{padding-top:0;}
+.hs-num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);width:22px;flex-shrink:0;padding-top:1px;}
+.hs-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--white);margin-bottom:5px;}
+.hs-desc{font-size:12.5px;color:var(--muted);line-height:1.6;}
+.how-flow{padding:40px 36px;display:flex;flex-direction:column;justify-content:center;}
+.hf-label{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:20px;}
+.hf-node{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;}
+.hf-ic{width:36px;height:36px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.hf-t{font-size:13px;font-weight:600;color:var(--white);}
+.hf-s{font-size:11px;color:var(--muted);margin-top:2px;}
+.hf-arr{text-align:center;color:var(--border);font-size:14px;margin:3px 0 3px 25px;}
+
+/* ── PRICING ── */
+.pg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:52px;}
+.pc{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px 24px;transition:all .22s;position:relative;}
+.pc:hover{transform:translateY(-3px);box-shadow:0 18px 50px #0003;}
+.pc.hot{background:linear-gradient(150deg,#0c1a35,#0a1228);border-color:var(--accent);}
+.pc-badge{position:absolute;top:20px;right:20px;background:var(--accent);color:#fff;font-size:10px;font-weight:600;letter-spacing:.05em;padding:3px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace;}
+.pc-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--white);margin-bottom:6px;}
+.pc-desc{font-size:12.5px;color:var(--muted);margin-bottom:22px;line-height:1.5;}
+.pc-price{margin-bottom:22px;}
+.pc-main{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent2);font-weight:500;}
+.pc-note{font-size:11px;color:var(--muted);margin-top:3px;font-style:italic;}
+.fl{display:flex;flex-direction:column;gap:9px;margin-bottom:26px;}
+.fi{display:flex;gap:9px;font-size:12.5px;color:var(--muted);align-items:flex-start;}
+.fi b{color:var(--accent2);flex-shrink:0;}
+.pc-btn{width:100%;padding:12px;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;}
+.pc-btn-o{background:transparent;color:var(--text);border:1px solid var(--border);}
+.pc-btn-o:hover{border-color:var(--accent);color:var(--accent);}
+.pc-btn-f{background:var(--accent);color:#fff;border:none;}
+.pc-btn-f:hover{opacity:.85;}
+
+/* ── FAQ ── */
+.faq-layout{display:grid;grid-template-columns:340px 1fr;gap:64px;align-items:start;margin-top:56px;}
+.faq-aside-desc{font-size:13.5px;color:var(--muted);line-height:1.8;margin-top:16px;font-weight:300;}
+.faq-aside-contact{display:inline-flex;align-items:center;gap:8px;margin-top:28px;padding:10px 18px;border:1px solid var(--border);border-radius:10px;font-size:12.5px;color:var(--muted);text-decoration:none;transition:border-color .2s,color .2s;font-family:'JetBrains Mono',monospace;}
+.faq-aside-contact:hover{border-color:var(--accent2);color:var(--accent2);}
+.faq-list{display:flex;flex-direction:column;gap:6px;}
+.faq-item{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .25s,box-shadow .25s;cursor:pointer;}
+.faq-item:hover{border-color:#3b82f625;}
+.faq-item.open{border-color:#3b82f640;box-shadow:0 4px 32px #3b82f608;}
+.faq-q{display:flex;align-items:center;gap:14px;padding:18px 20px;user-select:none;}
+.faq-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);width:24px;flex-shrink:0;}
+.faq-item.open .faq-num{color:var(--accent);}
+.faq-icon{width:34px;height:34px;border-radius:9px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:background .2s,border-color .2s;}
+.faq-item.open .faq-icon{background:#3b82f610;border-color:#3b82f635;}
+.faq-q-text{flex:1;font-family:'Syne',sans-serif;font-size:14.5px;font-weight:700;color:var(--white);letter-spacing:-.02em;line-height:1.3;}
+.faq-chevron{flex-shrink:0;color:var(--muted);width:28px;height:28px;border-radius:7px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;transition:transform .35s cubic-bezier(.34,1.56,.64,1),color .2s,border-color .2s,background .2s;}
+.faq-item.open .faq-chevron{transform:rotate(180deg);color:var(--accent);border-color:#3b82f640;background:#3b82f610;}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .42s cubic-bezier(.4,0,.2,1);}
+.faq-item.open .faq-a{max-height:640px;}
+.faq-a-inner{padding:0 20px 20px 72px;border-top:1px solid var(--border);}
+.faq-verdict{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:20px;font-size:11px;font-weight:500;font-family:'JetBrains Mono',monospace;letter-spacing:.05em;margin-top:16px;margin-bottom:2px;}
+.faq-verdict::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.vd-no{background:#f8717112;color:#f87171;border:1px solid #f8717128;}.vd-no::before{background:#f87171;}
+.vd-yes{background:#06d6a012;color:var(--accent2);border:1px solid #06d6a028;}.vd-yes::before{background:var(--accent2);}
+.faq-a-inner p{font-size:13px;color:var(--muted);line-height:1.78;margin-top:12px;}
+.faq-a-inner p strong{color:var(--text);}
+.faq-a-inner p em{color:var(--accent2);font-style:normal;}
+.faq-highlight{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:0 10px 10px 0;padding:12px 16px;margin-top:14px;font-size:12.5px;color:var(--muted);line-height:1.65;}
+.faq-hl-icon{font-size:14px;flex-shrink:0;margin-top:1px;}
+.faq-stats{display:flex;gap:0;margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.faq-stat{flex:1;padding:16px 14px;text-align:center;border-right:1px solid var(--border);}
+.faq-stat:last-child{border-right:none;}
+.faq-stat-val{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:500;color:var(--accent2);line-height:1;}
+.faq-stat-val span{font-size:13px;color:var(--muted);}
+.faq-stat-lbl{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.4;}
+.faq-steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.fsm-step{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 14px;flex:1;min-width:130px;}
+.fsm-n{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'JetBrains Mono',monospace;}
+.fsm-t{font-size:11.5px;color:var(--text);line-height:1.4;}
+.fsm-arr{color:var(--muted);font-size:14px;flex-shrink:0;}
+
+/* ── REGISTER ── */
+.reg-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:stretch;margin-top:52px;}
+.reg-steps{display:flex;flex-direction:column;gap:14px;margin-top:28px;}
+.rs{display:flex;gap:12px;align-items:flex-start;}
+.rs-n{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'JetBrains Mono',monospace;margin-top:2px;}
+.rs-t{font-size:12.5px;color:var(--muted);line-height:1.55;}
+.rs-t strong{color:var(--white);display:block;font-size:13px;margin-bottom:2px;}
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;height:100%;display:flex;flex-direction:column;}
+.reg-left{display:flex;flex-direction:column;justify-content:center;}
+.fc-tabs{display:flex;border-bottom:1px solid var(--border);}
+.fc-tab{flex:1;padding:14px;text-align:center;font-size:13px;cursor:pointer;border:none;background:transparent;font-family:'Inter',sans-serif;color:var(--muted);transition:all .15s;border-bottom:2px solid transparent;}
+.fc-tab.on{color:var(--accent);border-bottom-color:var(--accent);background:var(--surface);}
+.fc-body{padding:28px;flex:1;display:flex;flex-direction:column;}
+.prog{display:flex;gap:5px;margin-bottom:22px;}
+.pd{height:3px;flex:1;border-radius:2px;background:var(--border);}
+.pd.done{background:var(--accent);}
+.lbl{font-size:10.5px;font-weight:500;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:7px;display:block;}
+.inp{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:11px 14px;font-size:14px;color:var(--text);font-family:'Inter',sans-serif;transition:border-color .15s;outline:none;margin-bottom:14px;}
+.inp:focus{border-color:var(--accent);}
+.inp::placeholder{color:#2d3f60;}
+select.inp{cursor:pointer;}
+.ir{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.chk{display:flex;gap:9px;align-items:flex-start;margin-bottom:18px;}
+.chk input{accent-color:var(--accent);margin-top:3px;}
+.chk label{font-size:12px;color:var(--muted);line-height:1.5;}
+.chk a{color:var(--accent);}
+.sub-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-family:'Inter',sans-serif;font-weight:500;cursor:pointer;transition:all .2s;}
+.sub-btn:hover{opacity:.85;}
+.back-btn{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:13px;font-family:'Inter',sans-serif;font-size:14px;cursor:pointer;transition:.15s;flex-shrink:0;width:48px;}
+
+/* ── ANIMATIONS ── */
+.rv{opacity:0;transform:translateY(18px);transition:opacity .5s ease,transform .5s ease;}
+.rv.vis{opacity:1;transform:none;}
+
+/* ── MOBILE RESPONSIVE ── */
+@media(max-width:1100px){
+  .pg3{grid-template-columns:1fr 1fr;gap:14px;}
+}
+@media(max-width:900px){
+  nav{padding:0 16px;height:56px;}
+  .nav-logo{font-size:18px;}
+  .nav-logo svg{width:28px;height:28px;}
+  .nav-right{gap:8px;}
+  .theme-wrap{display:none;}
+  .btn-ghost,.btn-accent{padding:7px 14px;font-size:12px;}
+  .hero{padding:80px 20px 48px;gap:36px;grid-template-columns:1fr;}
+  h1{font-size:clamp(32px,8vw,48px);}
+  .hero-desc{font-size:14px;max-width:100%;}
+  .hero-btns{gap:8px;}
+  .btn-big,.btn-big2{padding:12px 20px;font-size:13px;}
+  .hero-nums{gap:24px;margin-top:32px;padding-top:28px;}
+  .hn-v{font-size:22px;}
+  .chat-mock{max-height:420px;width:100%;}
+  .sec-wrap{padding:64px 0;}
+  .sec-in{padding:0 20px;}
+  h2{font-size:clamp(26px,6vw,40px);}
+  .ag{grid-template-columns:1fr 1fr;gap:10px;}
+  .ac{padding:20px 16px;}
+  .ac h3{font-size:14px;}
+  .ac p{font-size:12px;}
+  .hs-title{font-size:14px;}
+  .hs-desc{font-size:12px;}
+  .pc{padding:22px 18px;}
+  .faq-layout{grid-template-columns:1fr;gap:36px;}
+  .faq-a-inner{padding-left:20px;}
+  .faq-q{padding:14px 16px;}
+  .faq-q-text{font-size:13.5px;}
+  .reg-left{order:2;}
+  .form-card{order:1;}
+  .fc-body{padding:20px 18px;}
+}
+@media(max-width:600px){
+  nav{padding:0 14px;}
+  .nav-links{display:none;}
+  .nav-logo{font-size:17px;}
+  .nav-logo svg{display:none;}
+  .lang-btn{padding:4px 8px;font-size:10.5px;}
+  .btn-ghost{padding:6px 10px;font-size:11.5px;}
+  .hero{padding:72px 14px 40px;gap:28px;}
+  h1{font-size:clamp(28px,9vw,40px);}
+  .hero-desc{font-size:13.5px;}
+  .btn-big,.btn-big2{padding:11px 16px;font-size:13px;border-radius:10px;}
+  .hero-btns{flex-direction:column;}
+  .hero-btns .btn-big,.hero-btns .btn-big2{width:100%;}
+  .hero-nums{flex-wrap:wrap;gap:18px;}
+  .hn-v{font-size:20px;}
+  .hn-l{font-size:10px;}
+  .chat-mock{max-height:360px;}
+  .bub-b,.bub-u{font-size:12px;}
+  .bub-opt{font-size:11px;padding:6px 12px;}
+  .scale-btn{width:28px;height:28px;font-size:11px;}
+  .sec-wrap{padding:48px 0;}
+  .sec-in{padding:0 14px;}
+  h2{font-size:clamp(24px,7.5vw,34px);}
+  .ag{grid-template-columns:1fr;}
+  .ac{padding:18px 14px;}
+  .how-steps,.how-flow{padding:22px 16px;}
+  .hs{gap:12px;}
+  .how-wrap{grid-template-columns:1fr;}
+  .how-steps{border-right:none;border-bottom:1px solid var(--border);}
+  .pc{padding:18px 16px;}
+  .pc-name{font-size:17px;}
+  .pg3{grid-template-columns:1fr;}
+  .faq-stats{flex-direction:column;}
+  .faq-stat{border-right:none;border-bottom:1px solid var(--border);}
+  .faq-stat:last-child{border-bottom:none;}
+  .faq-steps{flex-direction:column;}
+  .fsm-arr{transform:rotate(90deg);}
+  .ir{grid-template-columns:1fr;}
+  .fc-tabs{flex-wrap:wrap;}
+  .fc-tab{font-size:12px;padding:11px 8px;}
+  .reg-grid{grid-template-columns:1fr;}
+  footer div{flex-direction:column;gap:6px;text-align:center;}
+}
+</style>
+</head>
+<body>
+
+<script>
+(function(){
+  if(localStorage.getItem('nexum_lang')==='en') document.body.classList.add('en');
+})();
+</script>
+
+<script>
+const T = {
+  uk: {
+    nav_about:'Про нас', nav_how:'Як працює', nav_pricing:'Ціни', nav_faq:'FAQ', nav_register:'Реєстрація', nav_login:'Увійти →',
+    hero_h1_line1:'Telegram',hero_h1_line2:'-бот,', hero_h1_line3:'що збирає', hero_h1_line4:'анамнез', hero_h1_line5:' за вас',
+    hero_desc:'Nexum автоматизує опитування пацієнтів до прийому. Лікар отримує структуровані відповіді й анамнез — ще до зустрічі з пацієнтом.',
+    hero_btn1:'Підключити клініку', hero_btn2:'Як це працює',
+    hero_stat1_v:'30', hero_stat1_u:'хв', hero_stat1_l:'старт без технічних знань',
+    hero_stat2_v:'3', hero_stat2_u:'хв', hero_stat2_l:'середнє опитування',
+    hero_stat3_v:'94', hero_stat3_u:'%', hero_stat3_l:'заповненість анамнезів',
+    chat_name:'Nexum Bot', chat_sub:'Асистент · Клініка «Здоров\'я»',
+    chat_hint:'👆 Натисніть на варіант — спробуйте самі',
+    chat_done:'✅ Анамнез готовий — лікар вже бачить це у кабінеті',
+    chat_complete:'Опитування завершено',
+    chat_restart:'↺ Спробувати ще раз',
+    cs0_m1:'Добрий день! Я допоможу підготуватись до прийому. 👋',
+    cs0_m2:'Як вас звати?', cs0_m3:'Оксана Коваль',
+    cs1_bot:'Оксано, яка основна причина вашого звернення сьогодні?',
+    cs1_o:['🤕 Болить голова','❤️ Тиск / серце','🤒 Температура','💊 Інше'],
+    cs1_v:['Головний біль','Тиск і серце','Температура','Інше'],
+    cs2_bot:'Як давно турбує {complaint}?',
+    cs2_o:['Сьогодні вперше','Кілька днів','Понад тиждень','Хронічне'],
+    cs2_v:['1 день','2–5 днів','> 7 днів','Хронічне'],
+    cs3_bot:'Оцініть інтенсивність болю від 1 до 10:',
+    cs3_l:['Слабкий','Помірний','Сильний'],
+    cs3_ua:'Інтенсивність',
+    cs4_bot:'Чи є у вас алергія на ліки?',
+    cs4_o:['Ні','Так — пеніцилін','Так — інше','Не знаю'],
+    cs4_v:['Немає','Пеніцилін','Інші','Невідомо'],
+    cs5_thanks:'Дякую, Оксано! Ось що я підготував для лікаря:',
+    sum_title:'📋 Анамнез зібрано',
+    sum_patient:'Пацієнт', sum_complaint:'Скарга', sum_duration:'Тривалість', sum_pain:'Біль', sum_allergy:'Алергія',
+    doc_name:'Лікар Коваль Л.О.', doc_ready:'Анамнез отримано, готовий до прийому',
+    about_lbl:'Про платформу', about_h2_1:'Що таке ', about_h2_2:'Nexum',about_h2_3:'?',
+    feat1_t:'Telegram-бот', feat1_p:'Пацієнт проходить опитування у звичному месенджері. Без реєстрацій, без нових додатків.',
+    feat2_t:'Кабінет лікаря', feat2_p:'Всі пацієнти, анамнези, опитування та динаміка — в зручному веб-інтерфейсі.',
+    feat3_t:'Конструктор питань', feat3_p:'Лікар сам будує опитування: текст, шкала, так/ні, варіанти відповідей.',
+    feat4_t:'Аналітика', feat4_p:'Статистика по клініці, завантаженість лікарів, середній score опитувань.',
+    feat5_t:'Оплата за пацієнта', feat5_p:'Ніяких абонплат. Лише $0.2–$0.3 за кожного пацієнта, що пройшов опитування.',
+    feat6_t:'Старт за 30 хвилин', feat6_p:'Від реєстрації до першого опитування — менше пів години. Ми допомагаємо безкоштовно.',
+    how_lbl:'Як це працює', how_h2_1:'Від реєстрації до', how_h2_2:'першого пацієнта',
+    how1_t:'Реєструєте клініку', how1_d:'Заповнюєте анкету — назва, спеціалізація, контакти. Активація протягом 24 годин.',
+    how2_t:'Лікарі отримують коди', how2_d:'Кожен лікар отримує унікальний код і пароль для входу в особистий кабінет.',
+    how3_t:'Пацієнт у Telegram', how3_d:'Лікар надсилає посилання. Пацієнт відповідає на питання перед або після прийому.',
+    how4_t:'Лікар бачить результати', how4_d:'Усі відповіді, score і динаміка — одразу в кабінеті. Готовий до прийому заздалегідь.',
+    flow_lbl:'Потік роботи',
+    flow1_t:'Клініка реєструється', flow1_s:'Заповнює анкету на сайті',
+    flow2_t:'Лікарі отримують коди', flow2_s:'Налаштовують опитування',
+    flow3_t:'Пацієнт у Telegram', flow3_s:'Проходить опитування перед прийомом',
+    flow4_t:'Лікар бачить відповіді', flow4_s:'Анамнез, score, динаміка',
+    flow5_t:'Якісний прийом', flow5_s:'Лікар готовий ще до зустрічі',
+    pricing_lbl:'Ціни', pricing_h2_1:'Платите лише за', pricing_h2_2:'реальних пацієнтів',
+    pricing_sub:'$0.2–$0.3 за кожного пацієнта, який пройшов опитування. Ніяких авансів.',
+    plan1_name:'Старт', plan1_desc:'Для лікарів-одинаків і малих кабінетів',
+    plan1_price:'$0.30 / пацієнт', plan1_note:'мін. $20/міс · 1 лікар',
+    plan1_f1:'1 лікар', plan1_f2:'Конструктор опитувань', plan1_f3:'Telegram-бот', plan1_f4:'Базова аналітика',
+    plan1_btn:'Обрати план',
+    plan2_name:'Клініка', plan2_desc:'Для клінік з кількома відділеннями',
+    plan2_badge:'Популярний',
+    plan2_price:'$0.25 / пацієнт', plan2_note:'мін. $60/міс · до 15 лікарів',
+    plan2_f1:'До 15 лікарів', plan2_f2:'Бот з брендингом клініки', plan2_f3:'Конструктор + шаблони',
+    plan2_f4:'Розширена аналітика', plan2_f5:'Експорт PDF/Excel', plan2_f6:'Пріоритетна підтримка',
+    plan2_btn:'Обрати план',
+    plan3_name:'Мережа', plan3_desc:'Для мереж клінік та великих центрів',
+    plan3_price:'$0.20 / пацієнт', plan3_note:'мін. $150/міс · необмежено лікарів',
+    plan3_f1:'Необмежена кількість лікарів', plan3_f2:'Мультибрендинг', plan3_f3:'API-інтеграція',
+    plan3_f4:'Повна аналітика + BI', plan3_f5:'Виділений менеджер', plan3_f6:'SLA підтримка',
+    plan3_btn:'Обрати план',
+    pricing_fine:'Без прив\'язки картки · Без прихованих платежів',
+    faq_lbl:'FAQ', faq_h2_1:'Питання', faq_h2_2:'лікарів —', faq_h2_3:'чесно',
+    faq_desc:'Зібрали найпоширеніші сумніви перед підключенням. Якщо залишилось питання — напишіть нам.',
+    faq_contact:'Написати в Telegram',
+    faq1_q:'Бот замінює лікаря?', faq1_v:'Ні — жодним чином', faq1_type:'no',
+    faq1_p1:'Nexum — це <strong>підготовчий інструмент</strong>, а не замінник. Бот лише збирає скарги, симптоми та анамнез у зрозумілому форматі <em>до</em> того, як пацієнт потрапляє до вас.',
+    faq1_p2:'Діагностика, лікування, прийняття рішень — виключно ваша відповідальність. Nexum економить вам <strong>7–12 хвилин рутинного збору інформації</strong> на кожному прийомі.',
+    faq1_hl:'Аналогія: як медсестра, що заздалегідь вимірює тиск і записує скарги — тільки у Telegram.',
+    faq2_q:'Як пацієнти ставляться до бота?', faq2_v:'Краще, ніж очікуєте', faq2_type:'yes',
+    faq2_s1_v:'94%', faq2_s1_l:'успішно заповнюють анкету',
+    faq2_s2_v:'3 хв', faq2_s2_l:'середній час заповнення',
+    faq2_s3_v:'78%', faq2_s3_l:'заповнюють ще до прийому',
+    faq2_p1:'Telegram — найпопулярніший месенджер в Україні. Пацієнти не встановлюють нових додатків, не реєструються — просто відповідають у звичному чаті.',
+    faq2_p2:'Похилий вік — не перешкода: інтерфейс максимально простий, з кнопками замість введення тексту.',
+    faq2_hl:'«Я думала, пацієнти не будуть заповнювати. Виявилось, їм навіть подобається — відчувають увагу» — кардіолог, Київ.',
+    faq3_q:'Чи важко це налаштувати?', faq3_v:'30 хвилин — і ви готові', faq3_type:'yes',
+    faq3_p1:'Від реєстрації до першого опитування — не більше пів години. Технічних знань не потрібно: <strong>ми налаштовуємо все за вас</strong> у рамках онбордингу.',
+    faq3_s1:'Заповнюєте анкету — 5 хв', faq3_s2:'Ми активуємо бота — до 24 год', faq3_s3:'Отримуєте коди і починаєте',
+    faq3_hl:'Безкоштовно допоможемо з першим налаштуванням і відповімо на всі питання в Telegram-чаті підтримки.',
+    faq4_q:'Чи безпечні дані пацієнтів?', faq4_v:'Так, захищені', faq4_type:'yes',
+    faq4_p1:'Дані зберігаються на захищених серверах у ЄС. Передача — тільки через зашифровані канали <strong>HTTPS/TLS</strong>.',
+    faq4_p2:'Доступ до кабінету — лише за унікальним кодом лікаря і паролем. Кожен лікар бачить <strong>тільки своїх</strong> пацієнтів.',
+    faq5_q:'Є прихована абонплата?', faq5_v:'Жодної', faq5_type:'no',
+    faq5_p1:'Ви платите лише <strong>$0.2–$0.3 за кожного пацієнта</strong>, який реально заповнив опитування. Немає пацієнтів — немає списань.',
+    faq5_p2:'',
+    faq5_hl:'При 100 пацієнтах на місяць витрата — $20–$30. Менше ніж вартість одного прийому.',
+    reg_lbl:'Реєстрація', reg_h2_1:'Почніть роботу', reg_h2_2:'за 30 хвилин',
+    reg_desc:'Зареєструйте клініку або кабінет лікаря і отримайте доступ до повної платформи. Лікарі входять за унікальним кодом.',
+    reg_s1_t:'Заповніть анкету', reg_s1_d:'Назва, спеціалізація, контакти клініки',
+    reg_s2_t:'Лікарі отримують коди', reg_s2_d:'Унікальний код + пароль для кожного лікаря',
+    reg_s3_t:'Вхід за кодом', reg_s3_d:'Лікар входить через окрему сторінку входу',
+    reg_s4_t:'Налаштування та старт', reg_s4_d:'Конструктор, пацієнти, аналітика',
+    tab_clinic:'🏥 Клініка', tab_doctor:'👨‍⚕️ Лікар',
+    lbl_clinic_name:'Назва клініки *', ph_clinic_name:'Медичний центр «Здоров\'я»',
+    lbl_spec:'Спеціалізація *', ph_spec:'Оберіть...',
+    spec_opts:['Терапія / сімейна медицина','Кардіологія','Гастроентерологія','Неврологія','Педіатрія','Багатопрофільна'],
+    lbl_city:'Місто *', ph_city:'Київ', lbl_doctors:'Лікарів',
+    doc_count_opts:['1–3','4–10','11–30','30+'],
+    lbl_tariff:'Тарифний план *',
+    tariff_opts:['Старт — $0.30/пацієнт','Клініка — $0.25/пацієнт','Мережа — $0.20/пацієнт'],
+    btn_next:'Далі →', btn_back:'←',
+    lbl_contact:'Відповідальна особа *', ph_contact:'Олена Ткаченко',
+    lbl_phone:'Телефон *', ph_phone:'+38 067 000 00 00',
+    lbl_email:'E-mail *', ph_email:'clinic@example.com',
+    lbl_source:'Як дізнались?', ph_source:'Оберіть...',
+    source_opts:['Google','Рекомендація','Соцмережі','Конференція'],
+    lbl_agree:'Погоджуюсь з <a href="#">умовами</a> та <a href="#">конфіденційністю</a>',
+    btn_submit:'Надіслати ✓',
+    lbl_fn:'Ім\'я *', ph_fn:'Василь', lbl_ln:'Прізвище *', ph_ln:'Ковальов',
+    lbl_dr_spec:'Спеціальність *',
+    dr_spec_opts:['Терапевт','Кардіолог','Гастроентеролог','Невролог','Педіатр','Психіатр'],
+    lbl_clinic:'Клініка', ph_clinic:'Або «Приватний кабінет»',
+    lbl_tg:'Telegram', ph_tg:'@username',
+    ok_title:'Заявку надіслано!', ok_desc:'Ми зв\'яжемось з вами і надішлемо коди для входу лікарів.',
+    footer_copy:'© 2025 Nexum. Всі права захищені.', footer_flag:'Зроблено для українських лікарів 🇺🇦',
+    notify_header:'🏥 Нова заявка з сайту Nexum',
+    notify_type_clinic:'Клініка', notify_type_doctor:'Лікар',
+    notify_doctors:'лікарів',
+  },
+  en: {
+    nav_about:'About', nav_how:'How it works', nav_pricing:'Pricing', nav_faq:'FAQ', nav_register:'Sign up', nav_login:'Log in →',
+    /* ── FIXED: line2 now has comma to match Ukrainian "-бот," structure ── */
+    hero_h1_line1:'Telegram',hero_h1_line2:' bot,', hero_h1_line3:'collects your', hero_h1_line4:'medical history', hero_h1_line5:'',
+    hero_desc:'Nexum automates patient intake before appointments. Doctors receive structured answers and anamnesis — before meeting the patient.',
+    hero_btn1:'Connect your clinic', hero_btn2:'How it works',
+    hero_stat1_v:'30', hero_stat1_u:'min', hero_stat1_l:'setup — no tech skills needed',
+    hero_stat2_v:'3', hero_stat2_u:'min', hero_stat2_l:'average survey duration',
+    hero_stat3_v:'94', hero_stat3_u:'%', hero_stat3_l:'survey completion rate',
+    chat_name:'Nexum Bot', chat_sub:'Assistant · "Health" Clinic',
+    chat_hint:'👆 Click an option — try it yourself',
+    chat_done:'✅ Anamnesis ready — doctor sees it now',
+    chat_complete:'Survey completed',
+    chat_restart:'↺ Try again',
+    cs0_m1:'Good day! I\'ll help you prepare for your appointment. 👋',
+    cs0_m2:'What\'s your name?', cs0_m3:'Oksana Koval',
+    cs1_bot:'Oksana, what\'s the main reason for your visit today?',
+    cs1_o:['🤕 Headache','❤️ Blood pressure / heart','🤒 Fever','💊 Other'],
+    cs1_v:['Headache','Blood pressure','Fever','Other'],
+    cs2_bot:'How long have you had {complaint}?',
+    cs2_o:['First time today','A few days','Over a week','Chronic'],
+    cs2_v:['1 day','2–5 days','> 7 days','Chronic'],
+    cs3_bot:'Rate your pain intensity from 1 to 10:',
+    cs3_l:['Mild','Moderate','Severe'],
+    cs3_ua:'Intensity',
+    cs4_bot:'Do you have any drug allergies?',
+    cs4_o:['No','Yes — penicillin','Yes — other','Not sure'],
+    cs4_v:['None','Penicillin','Other','Unknown'],
+    cs5_thanks:'Thank you, Oksana! Here\'s what I prepared for the doctor:',
+    sum_title:'📋 Anamnesis collected',
+    sum_patient:'Patient', sum_complaint:'Complaint', sum_duration:'Duration', sum_pain:'Pain', sum_allergy:'Allergy',
+    doc_name:'Dr. Koval L.O.', doc_ready:'Anamnesis received, ready for appointment',
+    about_lbl:'About the platform', about_h2_1:'What is ', about_h2_2:'Nexum',about_h2_3:'?',
+    feat1_t:'Telegram Bot', feat1_p:'Patients fill out surveys in their everyday messenger. No sign-ups, no new apps.',
+    feat2_t:'Doctor\'s Dashboard', feat2_p:'All patients, anamneses, surveys, and trends — in a convenient web interface.',
+    feat3_t:'Survey Builder', feat3_p:'Doctors build their own surveys: text, scale, yes/no, multiple choice.',
+    feat4_t:'Analytics', feat4_p:'Clinic statistics, doctor workload, average survey scores.',
+    feat5_t:'Pay per patient', feat5_p:'No subscriptions. Just $0.2–$0.3 per patient who completes a survey.',
+    feat6_t:'30-minute setup', feat6_p:'From registration to first survey in under half an hour. We help for free.',
+    how_lbl:'How it works', how_h2_1:'From registration to', how_h2_2:'your first patient',
+    how1_t:'Register your clinic', how1_d:'Fill in the form — name, specialty, contacts. Activation within 24 hours.',
+    how2_t:'Doctors get access codes', how2_d:'Each doctor receives a unique code and password for their personal dashboard.',
+    how3_t:'Patient on Telegram', how3_d:'Doctor sends a link. Patient answers questions before or after the appointment.',
+    how4_t:'Doctor sees results', how4_d:'All answers, scores, and trends — instantly in the dashboard. Ready before the appointment.',
+    flow_lbl:'Workflow',
+    flow1_t:'Clinic registers', flow1_s:'Fills out form on website',
+    flow2_t:'Doctors get codes', flow2_s:'Set up surveys',
+    flow3_t:'Patient on Telegram', flow3_s:'Fills out survey before appointment',
+    flow4_t:'Doctor sees answers', flow4_s:'Anamnesis, score, trends',
+    flow5_t:'Quality appointment', flow5_s:'Doctor prepared before the meeting',
+    pricing_lbl:'Pricing', pricing_h2_1:'Pay only for', pricing_h2_2:'real patients',
+    pricing_sub:'$0.2–$0.3 per patient who completed a survey. No upfront costs.',
+    plan1_name:'Starter', plan1_desc:'For solo doctors and small practices',
+    plan1_price:'$0.30 / patient', plan1_note:'min. $20/mo · 1 doctor',
+    plan1_f1:'1 doctor', plan1_f2:'Survey builder', plan1_f3:'Telegram bot', plan1_f4:'Basic analytics',
+    plan1_btn:'Choose plan',
+    plan2_name:'Clinic', plan2_desc:'For clinics with multiple departments',
+    plan2_badge:'Popular',
+    plan2_price:'$0.25 / patient', plan2_note:'min. $60/mo · up to 15 doctors',
+    plan2_f1:'Up to 15 doctors', plan2_f2:'Branded bot', plan2_f3:'Builder + templates',
+    plan2_f4:'Advanced analytics', plan2_f5:'PDF/Excel export', plan2_f6:'Priority support',
+    plan2_btn:'Choose plan',
+    plan3_name:'Network', plan3_desc:'For clinic networks and large centers',
+    plan3_price:'$0.20 / patient', plan3_note:'min. $150/mo · unlimited doctors',
+    plan3_f1:'Unlimited doctors', plan3_f2:'Multi-branding', plan3_f3:'API integration',
+    plan3_f4:'Full analytics + BI', plan3_f5:'Dedicated manager', plan3_f6:'SLA support',
+    plan3_btn:'Choose plan',
+    pricing_fine:'No credit card required · No hidden fees',
+    faq_lbl:'FAQ', faq_h2_1:'Doctors\'', faq_h2_2:'questions —', faq_h2_3:'answered',
+    faq_desc:'Most common concerns before signing up. Still have a question? Write to us.',
+    faq_contact:'Message us on Telegram',
+    faq1_q:'Does the bot replace doctors?', faq1_v:'Not at all', faq1_type:'no',
+    faq1_p1:'Nexum is a <strong>preparation tool</strong>, not a replacement. The bot only collects complaints, symptoms and history in a structured format <em>before</em> the patient sees you.',
+    faq1_p2:'Diagnosis, treatment and decision-making are entirely your responsibility. Nexum saves you <strong>7–12 minutes of routine information gathering</strong> per appointment.',
+    faq1_hl:'Think of it as a nurse who takes vitals and writes down complaints beforehand — but in Telegram.',
+    faq2_q:'How do patients react to the bot?', faq2_v:'Better than you\'d expect', faq2_type:'yes',
+    faq2_s1_v:'94%', faq2_s1_l:'successfully complete the survey',
+    faq2_s2_v:'3 min', faq2_s2_l:'average completion time',
+    faq2_s3_v:'78%', faq2_s3_l:'complete before the appointment',
+    faq2_p1:'Telegram is one of the most popular messengers worldwide. Patients don\'t install new apps or sign up — they just reply in their usual chat.',
+    faq2_p2:'Older patients are no problem: the interface is as simple as possible, with buttons instead of text input.',
+    faq2_hl:'"I thought patients wouldn\'t bother. Turns out they actually like it — they feel cared for." — Cardiologist, Kyiv.',
+    faq3_q:'Is it hard to set up?', faq3_v:'30 minutes and you\'re ready', faq3_type:'yes',
+    faq3_p1:'From registration to first survey in under half an hour. No technical knowledge needed: <strong>we set everything up for you</strong> during onboarding.',
+    faq3_s1:'Fill out the form — 5 min', faq3_s2:'We activate the bot — within 24 hrs', faq3_s3:'Get your codes and start',
+    faq3_hl:'We\'ll help with initial setup for free and answer all questions in our Telegram support chat.',
+    faq4_q:'Is patient data secure?', faq4_v:'Yes, protected', faq4_type:'yes',
+    faq4_p1:'Data is stored on secure EU servers. Transmission only through encrypted <strong>HTTPS/TLS</strong> channels.',
+    faq4_p2:'Dashboard access is protected by a unique doctor code and password. Each doctor sees <strong>only their own</strong> patients.',
+    faq5_q:'Are there hidden subscription fees?', faq5_v:'None whatsoever', faq5_type:'no',
+    faq5_p1:'You pay only <strong>$0.2–$0.3 per patient</strong> who actually completes a survey. No patients — no charges.',
+    faq5_p2:'',
+    faq5_hl:'At 100 patients per month, your cost is $20–$30. Less than the price of a single appointment.',
+    reg_lbl:'Registration', reg_h2_1:'Get started', reg_h2_2:'in 30 minutes',
+    reg_desc:'Register your clinic or practice and get full platform access. Doctors sign in with their unique codes.',
+    reg_s1_t:'Fill out the form', reg_s1_d:'Clinic name, specialty, contacts',
+    reg_s2_t:'Doctors get codes', reg_s2_d:'Unique code + password for each doctor',
+    reg_s3_t:'Sign in with code', reg_s3_d:'Doctor signs in via the dedicated login page',
+    reg_s4_t:'Configure and start', reg_s4_d:'Builder, patients, analytics',
+    tab_clinic:'🏥 Clinic', tab_doctor:'👨‍⚕️ Doctor',
+    lbl_clinic_name:'Clinic name *', ph_clinic_name:'Health Medical Center',
+    lbl_spec:'Specialty *', ph_spec:'Choose...',
+    spec_opts:['Therapy / family medicine','Cardiology','Gastroenterology','Neurology','Pediatrics','Multi-specialty'],
+    lbl_city:'City *', ph_city:'Kyiv', lbl_doctors:'Doctors',
+    doc_count_opts:['1–3','4–10','11–30','30+'],
+    lbl_tariff:'Plan *',
+    tariff_opts:['Starter — $0.30/patient','Clinic — $0.25/patient','Network — $0.20/patient'],
+    btn_next:'Next →', btn_back:'←',
+    lbl_contact:'Contact person *', ph_contact:'Elena Tkachenko',
+    lbl_phone:'Phone *', ph_phone:'+38 067 000 00 00',
+    lbl_email:'E-mail *', ph_email:'clinic@example.com',
+    lbl_source:'How did you hear about us?', ph_source:'Choose...',
+    source_opts:['Google','Recommendation','Social media','Conference'],
+    lbl_agree:'I agree to the <a href="#">terms</a> and <a href="#">privacy policy</a>',
+    btn_submit:'Submit ✓',
+    lbl_fn:'First name *', ph_fn:'Vasyl', lbl_ln:'Last name *', ph_ln:'Koval',
+    lbl_dr_spec:'Specialty *',
+    dr_spec_opts:['Therapist','Cardiologist','Gastroenterologist','Neurologist','Pediatrician','Psychiatrist'],
+    lbl_clinic:'Clinic', ph_clinic:'Or "Private Practice"',
+    lbl_tg:'Telegram', ph_tg:'@username',
+    ok_title:'Request submitted!', ok_desc:'We\'ll contact you and send login codes for your doctors.',
+    footer_copy:'© 2025 Nexum. All rights reserved.', footer_flag:'Built for Ukrainian doctors 🇺🇦',
+    notify_header:'🏥 New application from Nexum website',
+    notify_type_clinic:'Clinic', notify_type_doctor:'Doctor',
+    notify_doctors:'doctors',
+  }
+};
+
+let LANG = localStorage.getItem('nexum_lang') || 'uk';
+
+function t(key){ return T[LANG][key] || T['uk'][key] || key; }
+
+function setLang(lang){
+  LANG = lang;
+  localStorage.setItem('nexum_lang', lang);
+  document.documentElement.lang = lang === 'uk' ? 'uk' : 'en';
+  if(lang === 'en') document.body.classList.add('en');
+  else document.body.classList.remove('en');
+  renderPage();
+  initChat();
+}
+
+function renderPage(){
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === LANG);
+  });
+
+  setTxt('lnk-about', t('nav_about'));
+  setTxt('lnk-how', t('nav_how'));
+  setTxt('lnk-pricing', t('nav_pricing'));
+  setTxt('lnk-faq', t('nav_faq'));
+  setTxt('lnk-register', t('nav_register'));
+
+  updateLoginBtn();
+
+  document.getElementById('hero-h1').innerHTML =
+    `<span style="font-family:'JetBrains Mono',monospace;font-weight:500;letter-spacing:-.02em">${t('hero_h1_line1')}</span>${t('hero_h1_line2')}<br/>${t('hero_h1_line3')}<br/><span class="gr">${t('hero_h1_line4')}</span>${t('hero_h1_line5')}`;
+  setTxt('hero-desc', t('hero_desc'));
+  setTxt('hero-btn1', t('hero_btn1'));
+  setTxt('hero-btn2', t('hero_btn2'));
+  document.getElementById('hero-stat1').innerHTML = `<div class="hn-v"><b>${t('hero_stat1_v')}</b><span style="font-size:14px;color:var(--muted)"> ${t('hero_stat1_u')}</span></div><div class="hn-l">${t('hero_stat1_l')}</div>`;
+  document.getElementById('hero-stat2').innerHTML = `<div class="hn-v">${t('hero_stat2_v')}<span style="font-size:14px;color:var(--muted)"> ${t('hero_stat2_u')}</span></div><div class="hn-l">${t('hero_stat2_l')}</div>`;
+  document.getElementById('hero-stat3').innerHTML = `<div class="hn-v">${t('hero_stat3_v')}<span style="font-size:18px">${t('hero_stat3_u')}</span></div><div class="hn-l">${t('hero_stat3_l')}</div>`;
+
+  setTxt('chat-name', t('chat_name'));
+  setTxt('chat-sub-title', t('chat_sub'));
+
+  setTxt('about-lbl', t('about_lbl'));
+  document.getElementById('about-h2').innerHTML = `${t('about_h2_1')}<span class="bl">${t('about_h2_2')}</span>${t('about_h2_3')}`;
+  for(let i=1;i<=6;i++){
+    setTxt(`feat${i}-t`, t(`feat${i}_t`));
+    setTxt(`feat${i}-p`, t(`feat${i}_p`));
+  }
+
+  setTxt('how-lbl', t('how_lbl'));
+  document.getElementById('how-h2').innerHTML = `${t('how_h2_1')}<br/><span class="gr">${t('how_h2_2')}</span>`;
+  for(let i=1;i<=4;i++){
+    setTxt(`how${i}-t`, t(`how${i}_t`));
+    setTxt(`how${i}-d`, t(`how${i}_d`));
+  }
+  setTxt('flow-lbl', t('flow_lbl'));
+  for(let i=1;i<=5;i++){
+    setTxt(`flow${i}-t`, t(`flow${i}_t`));
+    setTxt(`flow${i}-s`, t(`flow${i}_s`));
+  }
+
+  setTxt('pricing-lbl', t('pricing_lbl'));
+  document.getElementById('pricing-h2').innerHTML = `${t('pricing_h2_1')}<br/><span class="gr">${t('pricing_h2_2')}</span>`;
+  setTxt('pricing-sub', t('pricing_sub'));
+  setTxt('plan1-name', t('plan1_name')); setTxt('plan1-desc', t('plan1_desc'));
+  setTxt('plan1-price', t('plan1_price')); setTxt('plan1-note', t('plan1_note'));
+  for(let i=1;i<=4;i++) setTxt(`plan1-f${i}`, t(`plan1_f${i}`));
+  setTxt('plan1-btn', t('plan1_btn'));
+  setTxt('plan2-name', t('plan2_name')); setTxt('plan2-desc', t('plan2_desc'));
+  setTxt('plan2-badge', t('plan2_badge'));
+  setTxt('plan2-price', t('plan2_price')); setTxt('plan2-note', t('plan2_note'));
+  for(let i=1;i<=6;i++) setTxt(`plan2-f${i}`, t(`plan2_f${i}`));
+  setTxt('plan2-btn', t('plan2_btn'));
+  setTxt('plan3-name', t('plan3_name')); setTxt('plan3-desc', t('plan3_desc'));
+  setTxt('plan3-price', t('plan3_price')); setTxt('plan3-note', t('plan3_note'));
+  for(let i=1;i<=6;i++) setTxt(`plan3-f${i}`, t(`plan3_f${i}`));
+  setTxt('plan3-btn', t('plan3_btn'));
+  setTxt('pricing-fine', t('pricing_fine'));
+
+  setTxt('faq-lbl', t('faq_lbl'));
+  document.getElementById('faq-h2').innerHTML = `${t('faq_h2_1')}<br/>${t('faq_h2_2')}<br/><span class="gr">${t('faq_h2_3')}</span>`;
+  setTxt('faq-desc', t('faq_desc'));
+  setTxt('faq-contact', t('faq_contact'));
+  for(let i=1;i<=5;i++){
+    setTxt(`faq${i}-q`, t(`faq${i}_q`));
+    const vEl = document.getElementById(`faq${i}-v`);
+    if(vEl){ vEl.textContent = t(`faq${i}_v`); vEl.className = `faq-verdict vd-${t(`faq${i}_type`)}`; }
+    if(i<=5) setInnerHTML(`faq${i}-p1`, t(`faq${i}_p1`));
+    if(i<=5 && document.getElementById(`faq${i}-p2`)) setInnerHTML(`faq${i}-p2`, t(`faq${i}_p2`));
+    if(document.getElementById(`faq${i}-hl`)) setTxt(`faq${i}-hl`, t(`faq${i}_hl`));
+  }
+  setTxt('faq2-s1v', t('faq2_s1_v')); setTxt('faq2-s1l', t('faq2_s1_l'));
+  setTxt('faq2-s2v', t('faq2_s2_v')); setTxt('faq2-s2l', t('faq2_s2_l'));
+  setTxt('faq2-s3v', t('faq2_s3_v')); setTxt('faq2-s3l', t('faq2_s3_l'));
+  setTxt('faq3-st1', t('faq3_s1')); setTxt('faq3-st2', t('faq3_s2')); setTxt('faq3-st3', t('faq3_s3'));
+
+  setTxt('reg-lbl', t('reg_lbl'));
+  document.getElementById('reg-h2').innerHTML = `${t('reg_h2_1')}<br/><span class="bl">${t('reg_h2_2')}</span>`;
+  setTxt('reg-desc', t('reg_desc'));
+  for(let i=1;i<=4;i++){
+    setTxt(`reg-s${i}-t`, t(`reg_s${i}_t`));
+    setTxt(`reg-s${i}-d`, t(`reg_s${i}_d`));
+  }
+  setTxt('tab-clinic', t('tab_clinic')); setTxt('tab-doctor', t('tab_doctor'));
+  const fi = [
+    ['lbl-clinic-name',t('lbl_clinic_name')], ['inp-clinic-name',null,t('ph_clinic_name')],
+    ['lbl-spec',t('lbl_spec')], ['lbl-city',t('lbl_city')], ['inp-city',null,t('ph_city')],
+    ['lbl-doctors',t('lbl_doctors')], ['lbl-tariff',t('lbl_tariff')],
+    ['lbl-contact',t('lbl_contact')], ['inp-contact',null,t('ph_contact')],
+    ['lbl-phone-cl',t('lbl_phone')], ['inp-phone-cl',null,t('ph_phone')],
+    ['lbl-email-cl',t('lbl_email')], ['inp-email-cl',null,t('ph_email')],
+    ['lbl-source-cl',t('lbl_source')],
+    ['lbl-fn',t('lbl_fn')], ['inp-fn',null,t('ph_fn')],
+    ['lbl-ln',t('lbl_ln')], ['inp-ln',null,t('ph_ln')],
+    ['lbl-dr-spec',t('lbl_dr_spec')], ['lbl-dr-clinic',t('lbl_clinic')], ['inp-dr-clinic',null,t('ph_clinic')],
+    ['lbl-dr-tariff',t('lbl_tariff')],
+    ['lbl-phone-dr',t('lbl_phone')], ['inp-phone-dr',null,t('ph_phone')],
+    ['lbl-email-dr',t('lbl_email')], ['inp-email-dr',null,t('ph_email')],
+    ['lbl-tg',t('lbl_tg')], ['inp-tg',null,t('ph_tg')],
+    ['lbl-source-dr',t('lbl_source')],
+  ];
+  fi.forEach(([id, text, ph]) => {
+    const el = document.getElementById(id); if(!el) return;
+    if(text !== undefined && text !== null) el.textContent = text;
+    if(ph !== undefined) el.placeholder = ph;
+  });
+  rebuildSelect('sel-spec', t('spec_opts'), t('ph_spec'));
+  rebuildSelect('sel-dr-spec', t('dr_spec_opts'), t('ph_spec'));
+  rebuildSelect('sel-source-cl', t('source_opts'), t('ph_source'));
+  rebuildSelect('sel-source-dr', t('source_opts'), t('ph_source'));
+  rebuildSelect('sel-tariff', t('tariff_opts'), null, true);
+  rebuildSelect('sel-dr-tariff', t('tariff_opts').slice(0,2), null);
+  document.querySelectorAll('.btn-next').forEach(b => b.textContent = t('btn_next'));
+  document.querySelectorAll('.btn-back').forEach(b => b.textContent = t('btn_back'));
+  document.querySelectorAll('.btn-submit').forEach(b => b.textContent = t('btn_submit'));
+  document.querySelectorAll('.agree-lbl').forEach(l => l.innerHTML = t('lbl_agree'));
+  setTxt('reg-ok-title', t('ok_title')); setTxt('reg-ok-desc', t('ok_desc'));
+  setTxt('footer-copy', t('footer_copy')); setTxt('footer-flag', t('footer_flag'));
+}
+
+function setTxt(id, val){ const el = document.getElementById(id); if(el) el.textContent = val; }
+function setInnerHTML(id, val){ const el = document.getElementById(id); if(el) el.innerHTML = val; }
+function rebuildSelect(id, opts, placeholder, selectSecond){
+  const sel = document.getElementById(id); if(!sel) return;
+  sel.innerHTML = '';
+  if(placeholder){ const o=document.createElement('option'); o.value=''; o.textContent=placeholder; sel.appendChild(o); }
+  opts.forEach((opt,i) => {
+    const o = document.createElement('option'); o.value=opt; o.textContent=opt;
+    if(selectSecond && i===1) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+function goToDashboard() {
+  var remember = localStorage.getItem('nexum_remember');
+  var code     = localStorage.getItem('nexum_remember_code');
+  var name     = localStorage.getItem('nexum_remember_name') || code;
+  if (remember === '1' && code) {
+    sessionStorage.setItem('nexum_auth', code);
+    sessionStorage.setItem('nexum_name', name);
+    location.href = 'dashboard.html';
+  } else {
+    location.href = 'login.html';
+  }
+}
+
+function updateLoginBtn() {
+  var btn = document.getElementById('btn-login');
+  if (!btn) return;
+  var remember = localStorage.getItem('nexum_remember');
+  var code     = localStorage.getItem('nexum_remember_code');
+  var name     = localStorage.getItem('nexum_remember_name') || '';
+  if (remember === '1' && code) {
+    var firstName = name.split(' ')[0] || code;
+    btn.textContent = '👤 ' + firstName + ' →';
+    btn.style.borderColor = 'var(--accent2)';
+    btn.style.color = 'var(--accent2)';
+  } else {
+    btn.textContent = t('nav_login');
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  }
+}
+</script>
+
+<!-- ══ NAV ══ -->
+<nav>
+  <div class="nav-logo">
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="18,0 20,8 16,8" fill="#3b82f6" opacity="0.8"/>
+      <polygon points="18,36 20,28 16,28" fill="#3b82f6" opacity="0.8"/>
+      <polygon points="0,18 8,20 8,16" fill="#3b82f6" opacity="0.8"/>
+      <polygon points="36,18 28,20 28,16" fill="#3b82f6" opacity="0.8"/>
+      <polygon points="4,4 10,11 6,13" fill="#60a5fa" opacity="0.6"/>
+      <polygon points="32,4 26,11 30,13" fill="#60a5fa" opacity="0.6"/>
+      <polygon points="4,32 10,25 6,23" fill="#60a5fa" opacity="0.6"/>
+      <polygon points="32,32 26,25 30,23" fill="#60a5fa" opacity="0.6"/>
+      <polygon points="18,7 26,12 26,22 18,27 10,22 10,12" fill="#3b82f615" stroke="#3b82f6" stroke-width="1.5"/>
+      <rect x="15" y="11" width="6" height="14" rx="1.5" fill="#3b82f6"/>
+      <rect x="11" y="15" width="14" height="6" rx="1.5" fill="#3b82f6"/>
+    </svg>
+    <span>Nexum<span>.</span></span>
+  </div>
+  <div class="nav-links">
+    <a href="#about" id="lnk-about">Про нас</a>
+    <a href="#how" id="lnk-how">Як працює</a>
+    <a href="#pricing" id="lnk-pricing">Ціни</a>
+    <a href="#faq" id="lnk-faq">FAQ</a>
+    <a href="#register" id="lnk-register">Реєстрація</a>
+  </div>
+  <div class="nav-right">
+    <div class="lang-switch">
+      <button class="lang-btn active" data-lang="uk" onclick="setLang('uk')">UK</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+    </div>
+    <button class="btn-ghost" id="btn-login" onclick="goToDashboard()">Увійти →</button>
+  </div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<div class="hero">
+  <div class="rv">
+    <h1 id="hero-h1"></h1>
+    <p class="hero-desc" id="hero-desc"></p>
+    <div class="hero-btns">
+      <button class="btn-big" id="hero-btn1" onclick="document.getElementById('register').scrollIntoView({behavior:'smooth'})"></button>
+      <button class="btn-big2" id="hero-btn2" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})"></button>
+    </div>
+    <div class="hero-nums">
+      <div id="hero-stat1"></div>
+      <div id="hero-stat2"></div>
+      <div id="hero-stat3"></div>
+    </div>
+  </div>
+  <div class="chat-mock rv" style="transition-delay:.15s" id="chatDemo">
+    <div class="cm-bar">
+      <div class="cm-dots">
+        <div class="cm-dot" style="background:#ff5f57"></div>
+        <div class="cm-dot" style="background:#ffbd2e"></div>
+        <div class="cm-dot" style="background:#28c840"></div>
+      </div>
+      <div style="width:10px"></div>
+      <div class="cm-av">🤖</div>
+      <div style="flex:1">
+        <div class="cm-name" id="chat-name">Nexum Bot</div>
+        <div class="cm-sub" id="chat-sub-title"></div>
+      </div>
+      <div class="cm-live" id="cmLive"></div>
+    </div>
+    <div class="chat-progress">
+      <div class="chat-progress-fill" id="chatProgressFill" style="width:0%"></div>
+    </div>
+    <div class="cm-body" id="chatMessages"></div>
+    <div class="chat-hint" id="chatHint"></div>
+  </div>
+</div>
+
+<!-- ══ ABOUT ══ -->
+<div class="sec-wrap" style="background:var(--surface);" id="about">
+  <div class="sec-in">
+    <div class="rv">
+      <div class="sec-lbl" id="about-lbl"></div>
+      <h2 id="about-h2"></h2>
+    </div>
+    <div class="ag">
+      <div class="ac rv"><div class="ac-i">🤖</div><h3 id="feat1-t"></h3><p id="feat1-p"></p></div>
+      <div class="ac rv" style="transition-delay:.08s"><div class="ac-i">🩺</div><h3 id="feat2-t"></h3><p id="feat2-p"></p></div>
+      <div class="ac rv" style="transition-delay:.16s"><div class="ac-i">🛠</div><h3 id="feat3-t"></h3><p id="feat3-p"></p></div>
+      <div class="ac rv" style="transition-delay:.05s"><div class="ac-i">📊</div><h3 id="feat4-t"></h3><p id="feat4-p"></p></div>
+      <div class="ac rv" style="transition-delay:.13s"><div class="ac-i">💰</div><h3 id="feat5-t"></h3><p id="feat5-p"></p></div>
+      <div class="ac rv" style="transition-delay:.21s"><div class="ac-i">⚡</div><h3 id="feat6-t"></h3><p id="feat6-p"></p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOW ══ -->
+<div class="sec-wrap" id="how">
+  <div class="sec-in">
+    <div class="rv">
+      <div class="sec-lbl" id="how-lbl"></div>
+      <h2 id="how-h2"></h2>
+    </div>
+    <div class="how-wrap rv" style="transition-delay:.1s">
+      <div class="how-steps">
+        <div class="hs"><div class="hs-num">01</div><div><div class="hs-title" id="how1-t"></div><div class="hs-desc" id="how1-d"></div></div></div>
+        <div class="hs"><div class="hs-num">02</div><div><div class="hs-title" id="how2-t"></div><div class="hs-desc" id="how2-d"></div></div></div>
+        <div class="hs"><div class="hs-num">03</div><div><div class="hs-title" id="how3-t"></div><div class="hs-desc" id="how3-d"></div></div></div>
+        <div class="hs"><div class="hs-num">04</div><div><div class="hs-title" id="how4-t"></div><div class="hs-desc" id="how4-d"></div></div></div>
+      </div>
+      <div class="how-flow">
+        <div class="hf-label" id="flow-lbl"></div>
+        <div class="hf-node"><div class="hf-ic">🏥</div><div><div class="hf-t" id="flow1-t"></div><div class="hf-s" id="flow1-s"></div></div></div>
+        <div class="hf-arr">↓</div>
+        <div class="hf-node"><div class="hf-ic">👨‍⚕️</div><div><div class="hf-t" id="flow2-t"></div><div class="hf-s" id="flow2-s"></div></div></div>
+        <div class="hf-arr">↓</div>
+        <div class="hf-node"><div class="hf-ic">📱</div><div><div class="hf-t" id="flow3-t"></div><div class="hf-s" id="flow3-s"></div></div></div>
+        <div class="hf-arr">↓</div>
+        <div class="hf-node"><div class="hf-ic">📊</div><div><div class="hf-t" id="flow4-t"></div><div class="hf-s" id="flow4-s"></div></div></div>
+        <div class="hf-arr">↓</div>
+        <div class="hf-node"><div class="hf-ic">✅</div><div><div class="hf-t" id="flow5-t"></div><div class="hf-s" id="flow5-s"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PRICING ══ -->
+<div class="sec-wrap" style="background:var(--surface);" id="pricing">
+  <div class="sec-in">
+    <div class="rv">
+      <div class="sec-lbl" id="pricing-lbl"></div>
+      <h2 id="pricing-h2"></h2>
+      <p id="pricing-sub" style="font-size:14px;color:var(--muted);margin-top:14px;line-height:1.7;max-width:400px;"></p>
+    </div>
+    <div class="pg3 rv" style="transition-delay:.05s">
+      <div class="pc">
+        <div class="pc-name" id="plan1-name"></div>
+        <div class="pc-desc" id="plan1-desc"></div>
+        <div class="pc-price"><div class="pc-main" id="plan1-price"></div><div class="pc-note" id="plan1-note"></div></div>
+        <div class="fl">
+          <div class="fi"><b>✓</b><span id="plan1-f1"></span></div>
+          <div class="fi"><b>✓</b><span id="plan1-f2"></span></div>
+          <div class="fi"><b>✓</b><span id="plan1-f3"></span></div>
+          <div class="fi"><b>✓</b><span id="plan1-f4"></span></div>
+        </div>
+        <button class="pc-btn pc-btn-f" id="plan1-btn" onclick="document.getElementById('register').scrollIntoView({behavior:'smooth'});setTimeout(()=>{const s=document.getElementById('sel-tariff');if(s)s.selectedIndex=0;},400)"></button>
+      </div>
+      <div class="pc hot">
+        <div class="pc-badge" id="plan2-badge"></div>
+        <div class="pc-name" id="plan2-name"></div>
+        <div class="pc-desc" id="plan2-desc"></div>
+        <div class="pc-price"><div class="pc-main" id="plan2-price" style="color:var(--accent)"></div><div class="pc-note" id="plan2-note" style="color:var(--muted)"></div></div>
+        <div class="fl">
+          <div class="fi"><b>✓</b><span id="plan2-f1" style="color:var(--text)"></span></div>
+          <div class="fi"><b>✓</b><span id="plan2-f2" style="color:var(--text)"></span></div>
+          <div class="fi"><b>✓</b><span id="plan2-f3" style="color:var(--text)"></span></div>
+          <div class="fi"><b>✓</b><span id="plan2-f4" style="color:var(--text)"></span></div>
+          <div class="fi"><b>✓</b><span id="plan2-f5" style="color:var(--text)"></span></div>
+          <div class="fi"><b>✓</b><span id="plan2-f6" style="color:var(--text)"></span></div>
+        </div>
+        <button class="pc-btn pc-btn-f" id="plan2-btn" onclick="document.getElementById('register').scrollIntoView({behavior:'smooth'});setTimeout(()=>{const s=document.getElementById('sel-tariff');if(s)s.selectedIndex=1;},400)"></button>
+      </div>
+      <div class="pc">
+        <div class="pc-name" id="plan3-name"></div>
+        <div class="pc-desc" id="plan3-desc"></div>
+        <div class="pc-price"><div class="pc-main" id="plan3-price"></div><div class="pc-note" id="plan3-note"></div></div>
+        <div class="fl">
+          <div class="fi"><b>✓</b><span id="plan3-f1"></span></div>
+          <div class="fi"><b>✓</b><span id="plan3-f2"></span></div>
+          <div class="fi"><b>✓</b><span id="plan3-f3"></span></div>
+          <div class="fi"><b>✓</b><span id="plan3-f4"></span></div>
+          <div class="fi"><b>✓</b><span id="plan3-f5"></span></div>
+          <div class="fi"><b>✓</b><span id="plan3-f6"></span></div>
+        </div>
+        <button class="pc-btn pc-btn-f" id="plan3-btn" onclick="document.getElementById('register').scrollIntoView({behavior:'smooth'});setTimeout(()=>{const s=document.getElementById('sel-tariff');if(s)s.selectedIndex=2;},400)"></button>
+      </div>
+    </div>
+    <p class="rv" id="pricing-fine" style="text-align:center;font-size:12px;color:var(--muted);margin-top:20px;transition-delay:.2s"></p>
+  </div>
+</div>
+
+<!-- ══ FAQ ══ -->
+<div class="sec-wrap" id="faq">
+  <div class="sec-in">
+    <div class="faq-layout">
+      <div class="faq-aside rv">
+        <div class="sec-lbl" id="faq-lbl"></div>
+        <h2 id="faq-h2"></h2>
+        <p class="faq-aside-desc" id="faq-desc"></p>
+      </div>
+      <div class="faq-list rv" style="transition-delay:.12s">
+        <div class="faq-item" onclick="toggleFaq(this)">
+          <div class="faq-q"><span class="faq-num">01</span><div class="faq-icon">🤖</div><span class="faq-q-text" id="faq1-q"></span><div class="faq-chevron"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+          <div class="faq-a"><div class="faq-a-inner"><div class="faq-verdict vd-no" id="faq1-v"></div><p id="faq1-p1"></p><p id="faq1-p2"></p><div class="faq-highlight"><span class="faq-hl-icon">💡</span><span id="faq1-hl"></span></div></div></div>
+        </div>
+        <div class="faq-item" onclick="toggleFaq(this)">
+          <div class="faq-q"><span class="faq-num">02</span><div class="faq-icon">😊</div><span class="faq-q-text" id="faq2-q"></span><div class="faq-chevron"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+          <div class="faq-a"><div class="faq-a-inner"><div class="faq-verdict vd-yes" id="faq2-v"></div><div class="faq-stats"><div class="faq-stat"><div class="faq-stat-val" id="faq2-s1v"></div><div class="faq-stat-lbl" id="faq2-s1l"></div></div><div class="faq-stat"><div class="faq-stat-val" id="faq2-s2v"></div><div class="faq-stat-lbl" id="faq2-s2l"></div></div><div class="faq-stat"><div class="faq-stat-val" id="faq2-s3v"></div><div class="faq-stat-lbl" id="faq2-s3l"></div></div></div><p id="faq2-p1"></p><p id="faq2-p2"></p><div class="faq-highlight"><span class="faq-hl-icon">💬</span><span id="faq2-hl"></span></div></div></div>
+        </div>
+        <div class="faq-item" onclick="toggleFaq(this)">
+          <div class="faq-q"><span class="faq-num">03</span><div class="faq-icon">⚙️</div><span class="faq-q-text" id="faq3-q"></span><div class="faq-chevron"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+          <div class="faq-a"><div class="faq-a-inner"><div class="faq-verdict vd-yes" id="faq3-v"></div><p id="faq3-p1"></p><div class="faq-steps"><div class="fsm-step"><div class="fsm-n">1</div><div class="fsm-t" id="faq3-st1"></div></div><div class="fsm-arr">→</div><div class="fsm-step"><div class="fsm-n">2</div><div class="fsm-t" id="faq3-st2"></div></div><div class="fsm-arr">→</div><div class="fsm-step"><div class="fsm-n">3</div><div class="fsm-t" id="faq3-st3"></div></div></div><div class="faq-highlight"><span class="faq-hl-icon">🎯</span><span id="faq3-hl"></span></div></div></div>
+        </div>
+        <div class="faq-item" onclick="toggleFaq(this)">
+          <div class="faq-q"><span class="faq-num">04</span><div class="faq-icon">🔒</div><span class="faq-q-text" id="faq4-q"></span><div class="faq-chevron"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+          <div class="faq-a"><div class="faq-a-inner"><div class="faq-verdict vd-yes" id="faq4-v"></div><p id="faq4-p1"></p><p id="faq4-p2"></p></div></div>
+        </div>
+        <div class="faq-item" onclick="toggleFaq(this)">
+          <div class="faq-q"><span class="faq-num">05</span><div class="faq-icon">💳</div><span class="faq-q-text" id="faq5-q"></span><div class="faq-chevron"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+          <div class="faq-a"><div class="faq-a-inner"><div class="faq-verdict vd-no" id="faq5-v"></div><p id="faq5-p1"></p><div class="faq-highlight"><span class="faq-hl-icon">📊</span><span id="faq5-hl"></span></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REGISTER ══ -->
+<div class="sec-wrap" style="background:var(--surface);" id="register">
+  <div class="sec-in">
+    <div class="rv"><div class="sec-lbl" id="reg-lbl"></div><h2 id="reg-h2"></h2></div>
+    <div class="reg-grid">
+      <div class="rv reg-left">
+        <p id="reg-desc" style="font-size:14px;color:var(--muted);line-height:1.75;margin-top:16px;"></p>
+        <div class="reg-steps">
+          <div class="rs"><div class="rs-n">1</div><div class="rs-t"><strong id="reg-s1-t"></strong><span id="reg-s1-d"></span></div></div>
+          <div class="rs"><div class="rs-n">2</div><div class="rs-t"><strong id="reg-s2-t"></strong><span id="reg-s2-d"></span></div></div>
+          <div class="rs"><div class="rs-n">3</div><div class="rs-t"><strong id="reg-s3-t"></strong><span id="reg-s3-d"></span></div></div>
+          <div class="rs"><div class="rs-n">4</div><div class="rs-t"><strong id="reg-s4-t"></strong><span id="reg-s4-d"></span></div></div>
+        </div>
+      </div>
+      <div class="form-card rv" style="transition-delay:.15s">
+        <div class="fc-tabs">
+          <button class="fc-tab on" id="tab-clinic" onclick="switchReg('cl')"></button>
+          <button class="fc-tab" id="tab-doctor" onclick="switchReg('dr')"></button>
+        </div>
+        <div class="fc-body">
+          <div class="prog"><div class="pd done" id="rp1"></div><div class="pd" id="rp2"></div><div class="pd" id="rp3"></div></div>
+          <div id="clS1">
+            <label class="lbl" id="lbl-clinic-name"></label><input class="inp" id="inp-clinic-name"/>
+            <label class="lbl" id="lbl-spec"></label><select class="inp" id="sel-spec"></select>
+            <div class="ir"><div><label class="lbl" id="lbl-city"></label><input class="inp" style="margin:0" id="inp-city"/></div><div><label class="lbl" id="lbl-doctors"></label><select class="inp" style="margin:0" id="sel-doctors"></select></div></div>
+            <label class="lbl" style="margin-top:14px" id="lbl-tariff"></label><select class="inp" id="sel-tariff"></select>
+            <button class="sub-btn btn-next" onclick="rNext('cl',2)" style="margin-top:6px"></button>
+          </div>
+          <div id="clS2" style="display:none">
+            <label class="lbl" id="lbl-contact"></label><input class="inp" id="inp-contact"/>
+            <label class="lbl" id="lbl-phone-cl"></label><input class="inp" id="inp-phone-cl"/>
+            <label class="lbl" id="lbl-email-cl"></label><input class="inp" id="inp-email-cl" type="email"/>
+            <div style="display:flex;gap:10px"><button class="back-btn btn-back" onclick="rNext('cl',1)"></button><button class="sub-btn btn-next" onclick="rNext('cl',3)"></button></div>
+          </div>
+          <div id="clS3" style="display:none">
+            <label class="lbl" id="lbl-source-cl"></label><select class="inp" id="sel-source-cl"></select>
+            <div class="chk"><input type="checkbox" id="ag1" checked/><label for="ag1" class="agree-lbl"></label></div>
+            <div style="display:flex;gap:10px"><button class="back-btn btn-back" onclick="rNext('cl',2)"></button><button class="sub-btn btn-submit" onclick="submitReg()"></button></div>
+          </div>
+          <div id="drS1" style="display:none">
+            <div class="ir"><div><label class="lbl" id="lbl-fn"></label><input class="inp" style="margin:0" id="inp-fn"/></div><div><label class="lbl" id="lbl-ln"></label><input class="inp" style="margin:0" id="inp-ln"/></div></div><br/>
+            <label class="lbl" id="lbl-dr-spec"></label><select class="inp" id="sel-dr-spec"></select>
+            <label class="lbl" id="lbl-dr-clinic"></label><input class="inp" id="inp-dr-clinic"/>
+            <label class="lbl" id="lbl-dr-tariff"></label><select class="inp" id="sel-dr-tariff"></select>
+            <button class="sub-btn btn-next" onclick="rNext('dr',2)"></button>
+          </div>
+          <div id="drS2" style="display:none">
+            <label class="lbl" id="lbl-phone-dr"></label><input class="inp" id="inp-phone-dr"/>
+            <label class="lbl" id="lbl-email-dr"></label><input class="inp" id="inp-email-dr" type="email"/>
+            <label class="lbl" id="lbl-tg"></label><input class="inp" id="inp-tg"/>
+            <div style="display:flex;gap:10px"><button class="back-btn btn-back" onclick="rNext('dr',1)"></button><button class="sub-btn btn-next" onclick="rNext('dr',3)"></button></div>
+          </div>
+          <div id="drS3" style="display:none">
+            <label class="lbl" id="lbl-source-dr"></label><select class="inp" id="sel-source-dr"></select>
+            <div class="chk"><input type="checkbox" id="ag2" checked/><label for="ag2" class="agree-lbl"></label></div>
+            <div style="display:flex;gap:10px"><button class="back-btn btn-back" onclick="rNext('dr',2)"></button><button class="sub-btn btn-submit" onclick="submitReg()"></button></div>
+          </div>
+          <div id="regOk" style="display:none;text-align:center;padding:20px 0">
+            <div style="font-size:44px;margin-bottom:12px">🎉</div>
+            <div id="reg-ok-title" style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--white);margin-bottom:8px"></div>
+            <div id="reg-ok-desc" style="font-size:13px;color:var(--muted);line-height:1.65"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div style="max-width:1280px;margin:0 auto;padding:28px 56px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+    <span id="footer-copy" style="font-size:11.5px;color:var(--muted)"></span>
+    <span id="footer-flag" style="font-size:11.5px;color:var(--muted)"></span>
+  </div>
+</footer>
+
+<script>
+const rvEls = document.querySelectorAll('.rv');
+const obs = new IntersectionObserver(es => {
+  es.forEach(e => { if(e.isIntersecting){ e.target.classList.add('vis'); obs.unobserve(e.target); } });
+}, {threshold:.1});
+rvEls.forEach(r => obs.observe(r));
+
+function toggleFaq(el){
+  const isOpen = el.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(f => f.classList.remove('open'));
+  if(!isOpen) el.classList.add('open');
+}
+
+function switchReg(t){
+  document.querySelector('#tab-clinic').className = 'fc-tab' + (t==='cl'?' on':'');
+  document.querySelector('#tab-doctor').className = 'fc-tab' + (t==='dr'?' on':'');
+  ['clS1','clS2','clS3','drS1','drS2','drS3'].forEach(id => { const e=document.getElementById(id); if(e) e.style.display='none'; });
+  document.getElementById(t+'S1').style.display='block';
+  document.getElementById('regOk').style.display='none';
+  updProg(1);
+}
+function rNext(tp,s){
+  ['clS1','clS2','clS3','drS1','drS2','drS3'].forEach(id => { const e=document.getElementById(id); if(e) e.style.display='none'; });
+  document.getElementById(tp+'S'+s).style.display='block';
+  updProg(s);
+}
+function updProg(s){ for(let i=1;i<=3;i++) document.getElementById('rp'+i).className='pd'+(i<=s?' done':''); }
+
+function submitReg(){
+  ['clS1','clS2','clS3','drS1','drS2','drS3'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; });
+  document.getElementById('regOk').style.display='block';
+  for(let j=1;j<=3;j++) document.getElementById('rp'+j).className='pd done';
+
+  const isClinic = document.getElementById('tab-clinic').classList.contains('on');
+  const lines = [t('notify_header'), ''];
+  lines.push('Lang: ' + LANG.toUpperCase());
+  lines.push('Time: ' + new Date().toLocaleString());
+  lines.push('Type: ' + (isClinic ? t('notify_type_clinic') : t('notify_type_doctor')));
+  lines.push('');
+
+  if(isClinic){
+    const clinic  = document.getElementById('inp-clinic-name')?.value || '—';
+    const spec    = document.getElementById('sel-spec')?.value || '—';
+    const city    = document.getElementById('inp-city')?.value || '—';
+    const docs    = document.getElementById('sel-doctors')?.value || '—';
+    const tariff  = document.getElementById('sel-tariff')?.value || '—';
+    const contact = document.getElementById('inp-contact')?.value || '—';
+    const phone   = document.getElementById('inp-phone-cl')?.value || '—';
+    const email   = document.getElementById('inp-email-cl')?.value || '—';
+    const source  = document.getElementById('sel-source-cl')?.value || '—';
+    lines.push('🏥 ' + clinic);
+    lines.push('🩺 ' + spec + ' · 📍 ' + city);
+    lines.push('👥 ' + docs + ' ' + t('notify_doctors'));
+    lines.push('💰 ' + tariff);
+    lines.push('');
+    lines.push('👤 ' + contact);
+    lines.push('📞 ' + phone);
+    lines.push('📧 ' + email);
+    lines.push('📌 ' + source);
+  } else {
+    const fn     = document.getElementById('inp-fn')?.value || '—';
+    const ln     = document.getElementById('inp-ln')?.value || '—';
+    const spec   = document.getElementById('sel-dr-spec')?.value || '—';
+    const clinic = document.getElementById('inp-dr-clinic')?.value || '—';
+    const tariff = document.getElementById('sel-dr-tariff')?.value || '—';
+    const phone  = document.getElementById('inp-phone-dr')?.value || '—';
+    const email  = document.getElementById('inp-email-dr')?.value || '—';
+    const tg     = document.getElementById('inp-tg')?.value || '—';
+    const source = document.getElementById('sel-source-dr')?.value || '—';
+    lines.push('👨‍⚕️ ' + fn + ' ' + ln);
+    lines.push('🩺 ' + spec);
+    lines.push('🏥 ' + clinic);
+    lines.push('💰 ' + tariff);
+    lines.push('');
+    lines.push('📞 ' + phone);
+    lines.push('📧 ' + email);
+    lines.push('💬 ' + tg);
+    lines.push('📌 ' + source);
+  }
+
+  fetch('/api/notify', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({message: lines.join('\n')})
+  }).catch(()=>{});
+}
+
+function buildDocCount(){
+  const sel = document.getElementById('sel-doctors'); if(!sel) return;
+  sel.innerHTML = ['1–3','4–10','11–30','30+'].map(v=>`<option>${v}</option>`).join('');
+}
+buildDocCount();
+
+// ══ INTERACTIVE CHAT ══
+const CHAT = { step:0, answers:{}, el:null, prog:null, hint:null };
+
+function initChat(){
+  CHAT.el   = document.getElementById('chatMessages');
+  CHAT.prog = document.getElementById('chatProgressFill');
+  CHAT.hint = document.getElementById('chatHint');
+  CHAT.step = 0;
+  CHAT.answers = {};
+  CHAT.el.innerHTML = '';
+  CHAT.prog.style.width = '0%';
+  CHAT.hint.textContent = t('chat_hint');
+  CHAT.hint.style.opacity = '1';
+  runStep(0);
+}
+
+function runStep(idx){
+  CHAT.step = idx;
+  const steps = buildSteps();
+  const s = steps[idx];
+  if(!s) return;
+  setProgress(s.progress||0);
+  if(s.type==='auto'){
+    playMessages(s.messages, ()=>runStep(s.next));
+  } else if(s.type==='options'){
+    const msg = s.botMsg.replace('{complaint}', CHAT.answers.complaint||t('cs1_v')[0]);
+    addTyping(()=>{ addBotBubble(msg); addOptions(s); });
+  } else if(s.type==='scale'){
+    addTyping(()=>{ addBotBubble(s.botMsg); addScale(s); });
+  } else if(s.type==='summary'){
+    addTyping(()=>{
+      addBotBubble(t('cs5_thanks'));
+      setTimeout(()=>{
+        addSummary();
+        CHAT.hint.innerHTML = t('chat_done');
+        document.getElementById('chat-sub-title').textContent = t('chat_complete');
+      }, 400);
+    });
+  }
+}
+
+function buildSteps(){
+  return [
+    { type:'auto', delay:0, messages:[
+      {from:'bot',text:t('cs0_m1')},
+      {from:'bot',text:t('cs0_m2')},
+      {from:'user',text:t('cs0_m3')},
+    ], next:1, progress:0 },
+    { type:'options', botMsg:t('cs1_bot'), key:'complaint', options: t('cs1_o').map((label,i)=>({label,val:t('cs1_v')[i]})), progress:20 },
+    { type:'options', botMsg:t('cs2_bot'), key:'duration', options: t('cs2_o').map((label,i)=>({label,val:t('cs2_v')[i]})), progress:40 },
+    { type:'scale', botMsg:t('cs3_bot'), key:'pain', min:1, max:10, labels:t('cs3_l'), progress:60 },
+    { type:'options', botMsg:t('cs4_bot'), key:'allergy', options: t('cs4_o').map((label,i)=>({label,val:t('cs4_v')[i]})), progress:80 },
+    { type:'summary', progress:100 },
+  ];
+}
+
+function playMessages(msgs, cb, i=0){
+  if(i>=msgs.length){ setTimeout(cb,300); return; }
+  const m=msgs[i];
+  setTimeout(()=>{
+    if(m.from==='bot') addBotBubble(m.text);
+    else addUserBubble(m.text);
+    playMessages(msgs, cb, i+1);
+  }, i===0?200:500);
+}
+function addBotBubble(text){ const d=document.createElement('div'); d.className='bub-b'; d.textContent=text; CHAT.el.appendChild(d); scrollChat(); }
+function addUserBubble(text){ const d=document.createElement('div'); d.className='bub-u'; d.textContent=text; CHAT.el.appendChild(d); scrollChat(); }
+function addTyping(cb){
+  const t_=document.createElement('div'); t_.className='typing'; t_.innerHTML='<span></span><span></span><span></span>'; CHAT.el.appendChild(t_); scrollChat();
+  setTimeout(()=>{ CHAT.el.removeChild(t_); cb(); scrollChat(); }, 900);
+}
+function addOptions(step){
+  const wrap=document.createElement('div'); wrap.className='bub-opts';
+  step.options.forEach(opt=>{
+    const b=document.createElement('button'); b.className='bub-opt'; b.textContent=opt.label;
+    b.onclick=()=>{
+      CHAT.hint.style.opacity='0';
+      wrap.querySelectorAll('.bub-opt').forEach(x=>{x.disabled=true;});
+      b.classList.add('selected');
+      CHAT.answers[step.key]=opt.val;
+      setTimeout(()=>{ addUserBubble(opt.label); setTimeout(()=>runStep(CHAT.step+1),400); },200);
+    };
+    wrap.appendChild(b);
+  });
+  CHAT.el.appendChild(wrap); scrollChat();
+}
+function addScale(step){
+  const wrap=document.createElement('div'); wrap.className='scale-wrap';
+  const btns=document.createElement('div'); btns.className='scale-btns';
+  for(let i=step.min;i<=step.max;i++){
+    const b=document.createElement('button'); b.className='scale-btn'; b.textContent=i;
+    b.onclick=()=>{
+      CHAT.hint.style.opacity='0';
+      btns.querySelectorAll('.scale-btn').forEach(x=>{x.disabled=true;});
+      b.classList.add('selected');
+      CHAT.answers[step.key]=i;
+      setTimeout(()=>{ addUserBubble(`${t('cs3_ua')}: ${i}/10`); setTimeout(()=>runStep(CHAT.step+1),400); },200);
+    };
+    btns.appendChild(b);
+  }
+  const labels=document.createElement('div'); labels.className='scale-labels';
+  step.labels.forEach(l=>{ const s=document.createElement('span'); s.textContent=l; labels.appendChild(s); });
+  wrap.appendChild(btns); wrap.appendChild(labels); CHAT.el.appendChild(wrap); scrollChat();
+}
+function addSummary(){
+  const pain=CHAT.answers.pain||'—';
+  const painColor=pain>=7?'#f87171':pain>=4?'#fbbf24':'#34d399';
+  const allergy=CHAT.answers.allergy||'—';
+  const allergyColor=allergy!=='Немає'&&allergy!=='None'&&allergy!=='—'?'#f87171':'#34d399';
+  const card=document.createElement('div'); card.className='chat-summary';
+  card.innerHTML=`<div class="chat-summary-title">${t('sum_title')}</div>
+    <div class="chat-sum-row"><span class="chat-sum-label">${t('sum_patient')}</span><span class="chat-sum-val">${t('cs0_m3')}</span></div>
+    <div class="chat-sum-row"><span class="chat-sum-label">${t('sum_complaint')}</span><span class="chat-sum-val hi">${CHAT.answers.complaint||'—'}</span></div>
+    <div class="chat-sum-row"><span class="chat-sum-label">${t('sum_duration')}</span><span class="chat-sum-val">${CHAT.answers.duration||'—'}</span></div>
+    <div class="chat-sum-row"><span class="chat-sum-label">${t('sum_pain')}</span><span class="chat-sum-val" style="color:${painColor}">${pain}/10</span></div>
+    <div class="chat-sum-row"><span class="chat-sum-label">${t('sum_allergy')}</span><span class="chat-sum-val" style="color:${allergyColor}">${allergy}</span></div>`;
+  CHAT.el.appendChild(card);
+  setTimeout(()=>{
+    const doc=document.createElement('div'); doc.className='chat-doctor-card';
+    doc.innerHTML=`<div class="chat-doc-av">👨‍⚕️</div><div><div class="chat-doc-name">${t('doc_name')}</div><div class="chat-doc-ready">${t('doc_ready')}</div></div>`;
+    CHAT.el.appendChild(doc);
+    const restart=document.createElement('button'); restart.className='chat-restart'; restart.textContent=t('chat_restart');
+    restart.onclick=initChat; CHAT.el.appendChild(restart); scrollChat();
+  },600);
+  scrollChat();
+}
+function setProgress(pct){ CHAT.prog.style.width=pct+'%'; }
+function scrollChat(){ requestAnimationFrame(()=>{ CHAT.el.scrollTop=CHAT.el.scrollHeight; }); }
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === LANG);
+  });
+  renderPage();
+  initChat();
+});
+</script>
+</body>
+</html>
